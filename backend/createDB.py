@@ -2,14 +2,16 @@ import sqlite3
 import csv
 
 ################################################################################
-#inicio da criacao do bd
+#Database creation
 ################################################################################
+
+counterMax = 300000; #number of elements to add to tables per insert
 
 try:
     conn = sqlite3.connect('sidia.db')
-    print ("DB aberto com sucesso (createDBTables)")
+    print ("Database opened with success (createDBTables)")
 
-    #criacao da tabela Titles
+    #Creation of table: Titles
     conn.execute('''
                 CREATE TABLE TITLES(
                     TCONST TEXT PRIMARY KEY NOT NULL,
@@ -21,18 +23,16 @@ try:
                     ENDYEAR INT,
                     RUNTIMEMINUTES INT
                 );''')
-    print ("Tabela Titles criada com sucesso")
 
-    #criacao da tabela Genres
+    #Creation of table: Genres
     conn.execute('''
                 CREATE TABLE GENRES(
                     TCONST TEXT,
                     GENRES TEXT,
                     FOREIGN KEY(TCONST) REFERENCES TITLES(TCONST)
                 );''')
-    print ("Tabela Genres criada com sucesso")
 
-    #criacao da tabela Ratings
+    #Creation of table: Ratings
     conn.execute('''
                 CREATE TABLE RATINGS(
                     TCONST TEXT,
@@ -40,9 +40,8 @@ try:
                     AVERAGERATING REAL NOT NULL,
                     FOREIGN KEY(TCONST) REFERENCES TITLES(TCONST)
                 );''')
-    print ("Tabela Ratings criada com sucesso")
 
-    #criacao da tabela Names
+    #Creation of table: Names
     conn.execute('''
                 CREATE TABLE NAMES(
                     NCONST TEXT NOT NULL,
@@ -50,9 +49,8 @@ try:
                     BIRTHYEAR INT,
                     DEATHYEAR INT
                 );''')
-    print ("Tabela Names criada com sucesso")
 
-    #criacao da tabela knownForTitles
+    #Creation of table: knownForTitles
     conn.execute('''
                 CREATE TABLE KNOWNFORTITLES(
                     NCONST TEXT,
@@ -60,62 +58,57 @@ try:
                     FOREIGN KEY(NCONST) REFERENCES NAMES(NCONST),
                     FOREIGN KEY(TCONST) REFERENCES TITLES(TCONST)
                 );''')
-    print ("Tabela knownForTitles criada com sucesso")
 
-    #criacao da tabela Professions
+    #Creation of table: Professions
     conn.execute('''
                 CREATE TABLE PROFESSIONS(
                     NCONST TEXT,
                     PRIMARYPROFESSION TEXT NOT NULL,
                     FOREIGN KEY(NCONST) REFERENCES NAMES(NCONST)
                 );''')
-    print ("Tabela Professions criada com sucesso")
 
     conn.close()
 
-    print("Banco de dados [sidia.db] criado com sucesso!")
+    print("Database [sidia.db] created with success!")
 
 except sqlite3.Error as error:
-    print("Erro de conexao (createDBTables)", error)
+    print("Connection error at: createDBTables - ", error)
+
 
 ################################################################################
-#fim da criacao do bd
-################################################################################
-#inicio da insercao de dados no bd
+#Inserting data in the database
 ################################################################################
 
-#inserindo dados do arquivo tsv de Titles
+#inserting Title data
 try:
     conn = sqlite3.connect('sidia.db')
-    print ("DB acessado com sucesso. (inserir Titles)")
     with open("dataTitle.tsv", encoding='utf-8') as titleData:
 
-        print("dataTitle.tsv aberto com sucesso! Iniciando insercao de dados no bd...")
         cursor = conn.cursor()
-        next(titleData) #Pula primeira linha
+        next(titleData) #Skip first line
         tsvreader = csv.reader(titleData, dialect='excel-tab',quoting=csv.QUOTE_NONE)
 
-        cont = 0 #contador para insercao de dados no banco a cada 100.000 elementos
+        cont = 0 #Counter to insert data at counterMax elements
 
-        dadosT = [] #lista de dados de titles para serem inseridos no bd ao completar 100.000 elementos
-        dadosG = [] #lista de dados de genres para serem inseridos no bd ao completar 100.000 elementos
+        dadosT = [] #Title data list to be inserted in the database at counterMax elements
+        dadosG = [] #Genre data list to be inserted in the database at counterMax elements
 
         for line in tsvreader:
 
             cont = cont + 1
-            for i in range(5,9): #onde tiver \N ou "vazio" será salvo como null
+            for i in range(5,9): #setting all empty or "\N" values to "null"
 
                 if((line[i] == "\\N") or (len(line[i])) == 0):
                     line[i] = "null";
 
             dadoT = (line[0],line[1],line[2],line[3],line[4],line[5],line[6],line[7]);
-            dadosT.append(dadoT) #adiciona linha na lista até a coluna 8 para quando houver 100.000 serem inseridas no bd
+            dadosT.append(dadoT) #add all data up until line[7]
 
-            dadoG = (line[8].split(",")) #split na coluna 9 (generos do title)
+            dadoG = (line[8].split(",")) #split on column 9 (title genres)
             for i in dadoG:
-                    dadosG.append([line[0],i]) #lista de generos de cada title
+                    dadosG.append([line[0],i]) #Genre data list of each title
 
-            if(cont == 100000): #quando alcançar 100.000 registros -> insere com executemany no bd -> limpa as listas e zera o cont
+            if(cont == counterMax): #at counterMax elements -> insert in the database with executemany -> clear all lists and reset counter
                 cont = 0
 
                 cursor.executemany("INSERT INTO TITLES(TCONST,TITLETYPE,PRIMARYTITLE,ORIGINALTITLE,ISADULT,STARTYEAR,ENDYEAR,RUNTIMEMINUTES) VALUES (?,?,?,?,?,?,?,?);",(dadosT))
@@ -125,7 +118,7 @@ try:
                 conn.commit()
                 dadosG = []
 
-        #insere o resto que não chegou a completar 100.000 registros
+        #insert the leftover data in the lists
         if(dadosT):
             cursor.executemany("INSERT INTO TITLES(TCONST,TITLETYPE,PRIMARYTITLE,ORIGINALTITLE,ISADULT,STARTYEAR,ENDYEAR,RUNTIMEMINUTES) VALUES (?,?,?,?,?,?,?,?);",(dadosT))
             conn.commit()
@@ -134,91 +127,85 @@ try:
             cursor.executemany("INSERT INTO GENRES(TCONST,GENRES) VALUES (?,?);",(dadosG))
             conn.commit()
 
-    print("Finalizado insercao de dados de Titles!")
     conn.close()
 
 except sqlite3.Error as error:
-    print("Erro em: inserindo dataTitle.tsv", error, line)
+    print("Connection error at: dataTitle.tsv ", error, line)
 
 
-#inserindo dados do arquivo tsv de Ratings
+#inserting Ratings data
 try:
     conn = sqlite3.connect('sidia.db')
-    print ("DB acessado com sucesso. (inserir Ratings)")
     with open("dataRatings.tsv", encoding='utf-8') as ratingsData:
 
-        print("dataRatings.tsv aberto com sucesso! Iniciando insercao de dados no bd...")
         cursor = conn.cursor()
-        next(ratingsData) #Pula primeira linha
+        next(ratingsData) #skip first line
         tsvreader = csv.reader(ratingsData, dialect='excel-tab',quoting=csv.QUOTE_NONE)
 
-        cont = 0 #contador para insercao de dados no banco a cada 100.000 elementos
+        cont = 0 #Counter to insert data at counterMax elements
 
-        dadosR = [] #lista de dados de ratings para serem inseridos no bd ao completar 100.000 elementos
+        dadosR = [] #Ratings data list to be inserted in the database at counterMax elements
 
         for line in tsvreader:
 
             cont = cont + 1
 
             dadoR = (line[0],line[1],line[2])
-            dadosR.append(dadoR) #adiciona linha na lista para quando houver 100.000 serem inseridas no bd
+            dadosR.append(dadoR) #add all data in this line to the list
 
-            if(cont == 100000): #quando alcançar 100.000 registros -> insere com executemany no bd -> limpa a lista e zera o cont
+            if(cont == counterMax): #at counterMax elements -> insert in the database with executemany -> clear all lists and reset counter
                 cont = 0
 
                 cursor.executemany("INSERT INTO RATINGS(TCONST,AVERAGERATING,NUMVOTES) VALUES (?,?,?);",(dadosR))
                 conn.commit()
                 dadosR = []
 
-        #insere o resto que não chegou a completar 100.000 registros
+        #insert the leftover data in the lists
         if(dadosR):
             cursor.executemany("INSERT INTO RATINGS(TCONST,AVERAGERATING,NUMVOTES) VALUES (?,?,?);",(dadosR))
             conn.commit()
 
-    print("Finalizado insercao de dados de Ratings!")
     conn.close()
 
 except sqlite3.Error as error:
-    print("Erro em: inserindo dataRatings.tsv", error)
+    print("Connection error at: dataRatings.tsv ", error)
 
 
-#inserindo dados do arquivo tsv de Names
+#inserting Names data
 try:
     conn = sqlite3.connect('sidia.db')
-    print ("DB acessado com sucesso. (inserir Names)")
     with open("dataName.tsv", encoding='utf-8') as nameData:
 
-        print("dataName.tsv aberto com sucesso! Iniciando insercao de dados no bd...")
         cursor = conn.cursor()
-        next(nameData) #Pula primeira linha
+        next(nameData) #skip first line
         tsvreader = csv.reader(nameData, dialect='excel-tab',quoting=csv.QUOTE_NONE)
 
-        cont = 0 #contador para insercao de dados no banco a cada 100.000 elementos
+        cont = 0 #Counter to insert data at counterMax elements
 
-        dadosN = [] #lista de dados de names para serem inseridos no bd ao completar 100.000 elementos
-        dadosK = [] #lista de dados de knownForTitles para serem inseridos no bd ao completar 100.000 elementos
-        dadosP = [] #lista de dados de primaryProfession para serem inseridos no bd ao completar 100.000 elementos
+        dadosN = [] #Names data list to be inserted in the database at counterMax elements
+        dadosK = [] #knownForTitles data list to be inserted in the database at counterMax elements
+        dadosP = [] #Professions data list to be inserted in the database at counterMax elements
 
         for line in tsvreader:
 
             cont = cont + 1
 
-            for i in range(1,6): #onde tiver \N ou "vazio" será salvo como null
+            for i in range(1,6): #setting all empty or "\N" values to "null"
                 if((line[i] == "\\N") or (len(line[i])) == 0):
                     line[i] = "null";
 
             dadoN = (line[0],line[1],line[2],line[3])
-            dadosN.append(dadoN) #adiciona linha (até a coluna 4) na lista para quando houver 100.000 serem inseridas no bd
+            dadosN.append(dadoN) #insert line data up until line[3]
 
-            dadoP = (line[4].split(",")) #split na coluna 5 (profissoes do ator)
+            dadoP = (line[4].split(",")) #split on column 5 (professions)
             for i in dadoP:
-                dadosP.append([line[0],i]) #adiciona nconst e profissoes na lista para quando houver 100.000 serem inseridas no bd
+                dadosP.append([line[0],i]) #add nconst and professions to the list
 
-            dadoK = (line[5].split(",")) #split na coluna 6 (lista de titulos por quais o ator é conhecido)
+            dadoK = (line[5].split(",")) #split on column 6 (knownForTitles)
             for i in dadoK:
-                dadosK.append([line[0],i]) #adiciona nconst e titulos na lista para quando houver 100.000 serem inseridas no bd
+                dadosK.append([line[0],i]) #add nconst and tconst to the list
 
-            if(cont == 100000): #quando alcançar 100.000 registros -> insere com executemany no bd -> limpa as listas e zera o cont
+            if(cont == counterMax): #at counterMax elements -> insert in the database with executemany -> clear all lists and reset counter
                 cont = 0
 
                 cursor.executemany("INSERT INTO NAMES(NCONST,PRIMARYNAME,BIRTHYEAR,DEATHYEAR) VALUES (?,?,?,?);",(dadosN))
@@ -233,7 +220,7 @@ try:
                 conn.commit()
                 dadosK = []
 
-        #insere o resto que não chegou a completar 100.000 registros
+        #insert the leftover data in the lists
         if(dadosN):
             cursor.executemany("INSERT INTO NAMES(NCONST,PRIMARYNAME,BIRTHYEAR,DEATHYEAR) VALUES (?,?,?,?);",(dadosN))
             conn.commit()
@@ -246,9 +233,7 @@ try:
             cursor.executemany("INSERT INTO KNOWNFORTITLES(NCONST,TCONST) VALUES (?,?);",(dadosK))
             conn.commit()
 
-    print("Finalizado insercao de dados de Names!")
-    print("Banco populado com sucesso!")
     conn.close()
-
+    print("Finished inserting data.")
 except sqlite3.Error as error:
-    print("Erro em: inserindo dataName.tsv", error)
+    print("Connection error at: dataName.tsv ", error)
