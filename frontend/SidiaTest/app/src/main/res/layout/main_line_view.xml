@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical" android:layout_width="match_parent"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_height="155sp"
+    android:background="@drawable/border">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="25sp">
+
+        <TextView
+            android:id="@+id/main_line_tconst"
+            tools:text="tconst"
+            android:layout_height="match_parent"
+            android:layout_width="match_parent"
+            android:textSize="20sp"/>
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="25sp">
+
+        <TextView
+            android:id="@+id/main_line_primaryTitle"
+            tools:text="primaryTitle"
+            android:layout_height="match_parent"
+            android:layout_width="match_parent"
+            android:textSize="20sp"/>
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="25sp">
+
+        <TextView
+            android:id="@+id/main_line_originalTitle"
+            tools:text="originalTitle"
+            android:layout_height="match_parent"
+            android:layout_width="match_parent"
+            android:textSize="20sp"/>
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="25sp">
+
+        <TextView
+            android:id="@+id/main_line_startYear"
+            tools:text="startYear"
+            android:layout_height="match_parent"
+            android:layout_width="match_parent"
+            android:textSize="20sp"/>
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="25sp">
+
+        <TextView
+            android:id="@+id/main_line_averageRating"
+            tools:text="averageRating"
+            android:layout_height="match_parent"
+            android:layout_width="match_parent"
+            android:textSize="20sp"/>
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="25sp">
+
+        <TextView
+            android:id="@+id/main_line_numVotes"
+            tools:text="numVotes"
+            android:layout_height="match_parent"
+            android:layout_width="match_parent"
+            android:textSize="20sp"/>
+    </LinearLayout>
+</LinearLayout>
